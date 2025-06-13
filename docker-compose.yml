@@ -19,7 +19,9 @@ services:
       - ffmpeg
 
   ffmpeg:
-    image: jrottenberg/ffmpeg:4.4-ubuntu
+    build:
+      context: .
+      dockerfile: Dockerfile.ffmpeg
     entrypoint: ["bash", "-c"]
     command: >
       "nc -lk -p 9000 | ffmpeg -y -i - -c:v libx264 -c:a aac -f hls -hls_time 2 -hls_list_size 5 -hls_flags delete_segments /output/stream.m3u8"
