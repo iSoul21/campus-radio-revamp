@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OBS-like Broadcaster</title>
+  <style>
+    #preview, #live { width: 480px; height: 270px; border: 2px solid #333; margin: 8px; }
+    #controls { margin: 8px; }
+  </style>
+</head>
+<body>
+  <h2>Preview</h2>
+  <canvas id="preview" width="480" height="270"></canvas>
+
+  <h2>Live Output</h2>
+  <video id="live" width="480" height="270" autoplay muted></video>
+
+  <div id="controls">
+    <button id="transition">Go Live</button>
+    <!-- Add more scene controls as needed -->
+  </div>
+
+  <script>
+    const previewCanvas = document.getElementById('preview');
+    const liveVideo = document.getElementById('live');
+    const transitionBtn = document.getElementById('transition');
+
+    // For demonstration: draw webcam to preview
+    let previewStream;
+    navigator.mediaDevices.getUserMedia({video: true, audio: true}).then(stream => {
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.onloadedmetadata = () => video.play();
+      setInterval(() => {
+        previewCanvas.getContext('2d').drawImage(video, 0, 0, previewCanvas.width, previewCanvas.height);
+      }, 33); // ~30fps
+      previewStream = stream;
+    });
+
+    // Start "Go Live" (send preview to live)
+    let mediaRecorder, ws;
+    transitionBtn.onclick = () => {
+      // Capture canvas as stream
+      const canvasStream = previewCanvas.captureStream(30); // 30fps
+      // Optionally add audio from previewStream
+      if (previewStream) {
+        const audioTracks = previewStream.getAudioTracks();
+        audioTracks.forEach(track => canvasStream.addTrack(track));
+      }
+      liveVideo.srcObject = canvasStream;
+
+      // Send to backend (example using MediaRecorder and fetch/WebSocket)
+      mediaRecorder = new MediaRecorder(canvasStream, {mimeType: 'video/webm; codecs=vp8,opus'});
+      ws = new WebSocket('ws://localhost:8080/live/stream'); // WS endpoint on Flask
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(e.data);
+      };
+      ws.onopen = () => mediaRecorder.start(100);
+    };
+
+    // You would also need to handle stop, disconnect, etc!
+  </script>
+</body>
+</html>

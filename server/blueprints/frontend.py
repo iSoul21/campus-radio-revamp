@@ -3,7 +3,7 @@ import os
 
 frontend_bp = Blueprint("frontend", __name__)
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../app/apps"))
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../apps"))
 
 @frontend_bp.route("/")
 def index():
